@@ -137,8 +137,11 @@ export default function App() {
   const addTimeLog = async (log: Omit<TimeLog, 'id' | 'date'>) => {
     const now = new Date();
     const newLog = {
-      ...log,
       id: Date.now().toString(),
+      employee_id: log.employeeId,
+      employee_name: log.employeeName,
+      type: log.type,
+      timestamp: log.timestamp,
       date: now.toISOString().split('T')[0],
     };
 
