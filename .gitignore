@@ -1,0 +1,16 @@
+# Vercel
+.vercel
+
+# Environment variables
+.env
+.env*.local
+
+# Dependencies
+node_modules
+
+# Build output
+build
+dist
+
+# Logs
+*.log
