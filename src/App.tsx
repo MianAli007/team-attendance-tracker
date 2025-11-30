@@ -32,11 +32,31 @@ export default function App() {
   // Load data from Supabase
   useEffect(() => {
     const fetchData = async () => {
-      const { data: employeesData } = await supabase.from('employees').select('*');
-      const { data: logsData } = await supabase.from('time_logs').select('*');
+      const { data: employeesData, error: empError } = await supabase.from('employees').select('*');
+      const { data: logsData, error: logsError } = await supabase.from('time_logs').select('*');
+
+      if (empError) {
+        console.error('Error fetching employees:', empError);
+        alert(`Failed to load employees: ${empError.message}. Please check your Supabase configuration.`);
+      }
+      if (logsError) {
+        console.error('Error fetching time logs:', logsError);
+      }
 
       if (employeesData) setEmployees(employeesData);
-      if (logsData) setTimeLogs(logsData);
+      if (logsData) {
+        // Transform snake_case to camelCase
+        const transformedLogs = logsData.map((log: any) => ({
+          id: log.id,
+          employeeId: log.employee_id,
+          employeeName: log.employee_name,
+          type: log.type,
+          timestamp: log.timestamp,
+          date: log.date
+        }));
+        setTimeLogs(transformedLogs);
+        console.log('Loaded time logs:', transformedLogs);
+      }
     };
 
     fetchData();
@@ -45,6 +65,7 @@ export default function App() {
     const subscription = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, (payload) => {
+        console.log('Real-time employee event:', payload);
         if (payload.eventType === 'INSERT') {
           setEmployees((prev) => [...prev, payload.new as Employee]);
         } else if (payload.eventType === 'DELETE') {
@@ -52,11 +73,24 @@ export default function App() {
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'time_logs' }, (payload) => {
+        console.log('Real-time time_logs event:', payload);
         if (payload.eventType === 'INSERT') {
-          setTimeLogs((prev) => [...prev, payload.new as TimeLog]);
+          const newLog: any = payload.new;
+          const transformedLog: TimeLog = {
+            id: newLog.id,
+            employeeId: newLog.employee_id,
+            employeeName: newLog.employee_name,
+            type: newLog.type,
+            timestamp: newLog.timestamp,
+            date: newLog.date
+          };
+          console.log('Adding log to state:', transformedLog);
+          setTimeLogs((prev) => [...prev, transformedLog]);
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
       subscription.unsubscribe();
@@ -115,12 +149,15 @@ export default function App() {
       id: Date.now().toString(),
     };
 
-    const { error } = await supabase.from('employees').insert(newEmployee);
+    const { data, error } = await supabase.from('employees').insert(newEmployee).select();
 
     if (error) {
       console.error('Error adding employee:', error);
-      alert('Failed to add employee');
+      alert(`Failed to add employee: ${error.message}`);
+      return;
     }
+
+    console.log('Employee added successfully:', data);
     // State update handled by subscription
   };
 
@@ -145,13 +182,27 @@ export default function App() {
       date: now.toISOString().split('T')[0],
     };
 
-    const { error } = await supabase.from('time_logs').insert(newLog);
+    const { data, error } = await supabase.from('time_logs').insert(newLog).select();
 
     if (error) {
       console.error('Error adding time log:', error);
-      alert('Failed to add time log');
+      alert(`Failed to add time log: ${error.message}`);
+      return;
     }
-    // State update handled by subscription
+
+    if (data && data[0]) {
+      // Immediately update local state with the new log
+      const transformedLog: TimeLog = {
+        id: data[0].id,
+        employeeId: data[0].employee_id,
+        employeeName: data[0].employee_name,
+        type: data[0].type,
+        timestamp: data[0].timestamp,
+        date: data[0].date
+      };
+      setTimeLogs((prev) => [...prev, transformedLog]);
+      console.log('Time log added successfully:', transformedLog);
+    }
   };
 
   // Show login screen if not logged in

@@ -45,7 +45,10 @@ export function TimeTracker({ employees, timeLogs, onAddTimeLog, isAdmin, curren
     }
 
     const employee = employees.find(emp => emp.id === selectedEmployeeId);
-    if (!employee) return;
+    if (!employee) {
+      alert('Employee not found');
+      return;
+    }
 
     const now = new Date();
     const timestamp = now.toLocaleTimeString('en-US', {
@@ -54,6 +57,8 @@ export function TimeTracker({ employees, timeLogs, onAddTimeLog, isAdmin, curren
       second: '2-digit',
       hour12: true
     });
+
+    console.log('Logging time:', { type, employee: employee.name, timestamp });
 
     onAddTimeLog({
       employeeId: employee.id,
