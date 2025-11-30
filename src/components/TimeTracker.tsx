@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LogIn, Coffee, CoffeeIcon, LogOut, Clock } from 'lucide-react';
 import type { Employee, TimeLog } from '../App';
 
@@ -13,6 +13,13 @@ interface TimeTrackerProps {
 export function TimeTracker({ employees, timeLogs, onAddTimeLog, isAdmin, currentUser }: TimeTrackerProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(currentUser?.id || '');
 
+  // Update selectedEmployeeId when currentUser changes
+  useEffect(() => {
+    if (currentUser?.id) {
+      setSelectedEmployeeId(currentUser.id);
+    }
+  }, [currentUser]);
+
   const handleTimeLog = (type: TimeLog['type']) => {
     if (!selectedEmployeeId) {
       alert('Please select an employee');
@@ -23,11 +30,11 @@ export function TimeTracker({ employees, timeLogs, onAddTimeLog, isAdmin, curren
     if (!employee) return;
 
     const now = new Date();
-    const timestamp = now.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    const timestamp = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: true 
+      hour12: true
     });
 
     onAddTimeLog({
