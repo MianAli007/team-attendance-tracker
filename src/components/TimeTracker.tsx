@@ -13,10 +13,21 @@ interface TimeTrackerProps {
 export function TimeTracker({ employees, timeLogs, onAddTimeLog, isAdmin, currentUser }: TimeTrackerProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(currentUser?.id || '');
 
+  // Debug logging
+  console.log('TimeTracker render:', {
+    selectedEmployeeId,
+    currentUserId: currentUser?.id,
+    currentUserName: currentUser?.name,
+    employeesCount: employees.length,
+    isAdmin
+  });
+
   // Update selectedEmployeeId when currentUser changes
   useEffect(() => {
+    console.log('useEffect triggered:', { currentUserId: currentUser?.id });
     if (currentUser?.id) {
       setSelectedEmployeeId(currentUser.id);
+      console.log('Set selectedEmployeeId to:', currentUser.id);
     }
   }, [currentUser]);
 
