@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { LogIn, Coffee, CoffeeIcon, LogOut, Clock } from 'lucide-react';
 import type { Employee, TimeLog } from '../App';
 
@@ -11,25 +11,32 @@ interface TimeTrackerProps {
 }
 
 export function TimeTracker({ employees, timeLogs, onAddTimeLog, isAdmin, currentUser }: TimeTrackerProps) {
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(currentUser?.id || '');
+  // For non-admin users, find the employee ID from the employees array
+  // This handles cases where currentUser.id might not match the database
+  const computedEmployeeId = useMemo(() => {
+    if (isAdmin || !currentUser) return '';
 
-  // Debug logging
-  console.log('TimeTracker render:', {
-    selectedEmployeeId,
-    currentUserId: currentUser?.id,
-    currentUserName: currentUser?.name,
-    employeesCount: employees.length,
-    isAdmin
-  });
+    // First try to find by ID
+    const employeeById = employees.find(emp => emp.id === currentUser.id);
+    if (employeeById) return employeeById.id;
 
-  // Update selectedEmployeeId when currentUser changes
+    // If not found by ID, try to find by email (in case ID changed)
+    const employeeByEmail = employees.find(emp => emp.email === currentUser.email);
+    if (employeeByEmail) return employeeByEmail.id;
+
+    // Fallback to currentUser.id
+    return currentUser.id;
+  }, [employees, currentUser, isAdmin]);
+
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(computedEmployeeId);
+
+  // Update selectedEmployeeId when computed ID changes
   useEffect(() => {
-    console.log('useEffect triggered:', { currentUserId: currentUser?.id });
-    if (currentUser?.id) {
-      setSelectedEmployeeId(currentUser.id);
-      console.log('Set selectedEmployeeId to:', currentUser.id);
+    if (computedEmployeeId !== selectedEmployeeId) {
+      setSelectedEmployeeId(computedEmployeeId);
+      console.log('Updated selectedEmployeeId to:', computedEmployeeId);
     }
-  }, [currentUser]);
+  }, [computedEmployeeId]);
 
   const handleTimeLog = (type: TimeLog['type']) => {
     if (!selectedEmployeeId) {
@@ -207,7 +214,7 @@ export function TimeTracker({ employees, timeLogs, onAddTimeLog, isAdmin, curren
                     <div className="text-gray-600">{log.timestamp}</div>
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full ${getLogColor(log.type)}`}>
+                <span className={`px - 3 py - 1 rounded - full ${getLogColor(log.type)} `}>
                   {getLogLabel(log.type)}
                 </span>
               </div>
